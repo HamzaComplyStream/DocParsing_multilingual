@@ -495,7 +495,7 @@ if st.session_state.upload_mode:
                         st.error(f"Error during analysis: {str(e)}")
 else:
     # Show empty state or results
-    if "analysis_result" in st.session
+    if "analysis_result" in st.session:
     else:
     # Show empty state or results
     if "analysis_result" in st.session_state and st.session_state.get("show_results", False):
