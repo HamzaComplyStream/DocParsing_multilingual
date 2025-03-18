@@ -10,8 +10,10 @@ import tempfile
 import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
-from anthropic import Anthropic
 from dotenv import load_dotenv
+
+# Import our custom compatibility client instead of Anthropic directly
+from compatible_client import ClaudeClient
 
 # Import the code from the provided API script
 try:
@@ -255,120 +257,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Document processor class
-class DocumentProcessor:
-    def __init__(self, api_key):
-        self.today = datetime.today().strftime('%Y-%m-%d')
-        self.client = Anthropic(api_key=api_key)
-    
-    def classify_document(self, document_text: str):
-        """Classify the document type using Claude API"""
-        try:
-            user_prompt = user_prompt_classification(document_text)
-            
-            response = self.client.messages.create(
-                model=MODEL_ID,
-                max_tokens=1024,
-                system=system_prompt_for_doc_classification,
-                messages=[
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            
-            # Extract JSON from response
-            result_text = response.content[0].text
-            # Clean up the result (sometimes Claude returns extra text)
-            if '{' in result_text and '}' in result_text:
-                json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
-                result = json.loads(json_str)
-                return result
-            else:
-                return {"error": "Could not parse classification result", "raw_response": result_text}
-        except Exception as e:
-            st.error(f"Error classifying document: {str(e)}")
-            raise
-    
-    def process_document(self, document_text: str, document_class: int):
-        """Process the document based on its classification using Claude API"""
-        # Map document class to the appropriate prompt functions and system prompts
-        prompt_map = {
-            0: (user_prompt_poi, system_prompt_for_indentity_doc),
-            1: (user_prompt_poa, system_prompt_for_poa_doc),
-            2: (user_prompt_registration, system_prompt_for_registration_doc),
-            3: (user_prompt_ownership, system_prompt_for_ownership_doc),
-            4: (user_prompt_tax_return, system_prompt_for_tax_return_doc),
-            5: (user_prompt_financial, system_prompt_for_financial_doc),
-        }
-        
-        try:
-            # Get the appropriate prompt function and system prompt
-            user_prompt_func, system_prompt = prompt_map.get(document_class, 
-                                                            (user_prompt_financial, system_prompt_for_financial_doc))
-            
-            # Generate the user prompt
-            user_prompt = user_prompt_func(document_text, self.today)
-            
-            response = self.client.messages.create(
-                model=MODEL_ID,
-                max_tokens=4096,
-                system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-            
-            # Extract JSON from response
-            result_text = response.content[0].text
-            try:
-                # Try to extract JSON if Claude added extra text
-                if '{' in result_text and '}' in result_text:
-                    json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
-                    result = json.loads(json_str)
-                    return result
-                else:
-                    return {"raw_response": result_text}
-            except json.JSONDecodeError:
-                return {"raw_response": result_text}
-        except Exception as e:
-            st.error(f"Error processing document: {str(e)}")
-            raise
-
-    def process_document_in_batches(self, document_text: str):
-        """Process large documents by splitting into batches"""
-        if len(document_text) <= BATCH_SIZE:
-            # If document is small enough, classify and process it directly
-            classification = self.classify_document(document_text)
-            document_class = classification.get("class", 5)  # Default to financial if classification fails
-            result = self.process_document(document_text, document_class)
-            return {
-                "classification": classification,
-                "analysis": result
-            }
-        else:
-            # For large documents, first try to classify using a sample
-            sample_size = min(BATCH_SIZE, len(document_text))
-            # Take beginning, middle and end portions to create a representative sample
-            start_portion = document_text[:sample_size//3]
-            middle_start = max(0, (len(document_text) // 2) - (sample_size//6))
-            middle_portion = document_text[middle_start:middle_start + (sample_size//3)]
-            end_start = max(0, len(document_text) - (sample_size//3))
-            end_portion = document_text[end_start:]
-            sample_text = start_portion + "\n\n" + middle_portion + "\n\n" + end_portion
-            
-            # Classify using the sample
-            classification = self.classify_document(sample_text)
-            document_class = classification.get("class", 5)  # Default to financial if classification fails
-            
-            # Use first batch for detailed analysis
-            analysis_text = document_text[:BATCH_SIZE]
-            result = self.process_document(analysis_text, document_class)
-            
-            return {
-                "classification": classification,
-                "analysis": result,
-                "note": "Document was processed using a representative sample due to size."
-            }
-
 # PDF extraction functions
 def extract_text_from_pdf(pdf_data: bytes):
     """Extract text from PDF using PyMuPDF"""
@@ -448,8 +336,8 @@ def process_document_data(file_data, filename):
         # Extract text from the document
         document_text = extract_text_from_pdf(file_data)
         
-        # Process the document
-        processor = DocumentProcessor(CLAUDE_API_KEY)
+        # Process the document using our compatibility client
+        processor = ClaudeClient(CLAUDE_API_KEY)
         result = processor.process_document_in_batches(document_text)
         
         # Add processing metadata
@@ -606,6 +494,9 @@ if st.session_state.upload_mode:
                     except Exception as e:
                         st.error(f"Error during analysis: {str(e)}")
 else:
+    # Show empty state or results
+    if "analysis_result" in st.session
+    else:
     # Show empty state or results
     if "analysis_result" in st.session_state and st.session_state.get("show_results", False):
         # Show results
