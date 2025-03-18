@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600">
+  <!-- Main Background -->
+  <rect width="960" height="600" fill="#F9FAFB" />
+  
+  <!-- Browser Window Chrome -->
+  <rect x="30" y="30" width="900" height="540" rx="8" ry="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" />
+  <circle cx="60" cy="50" r="6" fill="#F87171" />
+  <circle cx="85" cy="50" r="6" fill="#FBBF24" />
+  <circle cx="110" cy="50" r="6" fill="#34D399" />
+  <rect x="30" y="70" width="900" height="1" fill="#E5E7EB" />
+  
+  <!-- Streamlit Layout -->
+  <rect x="30" y="71" width="200" height="499" fill="#F3F4F6" />
+  
+  <!-- Sidebar Content -->
+  <image x="85" y="95" width="70" height="70" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAADq0lEQVR4nO2aS2tdVRSAv5smTZomadMmaYmYqG1IfWuLoCLiA/+BDnQgijpyoAMHOvIPiPgHnIgOHIgIWkGsULVqrxWhKtimQayPaGx6c9Mkje3NdbCWHC83955z9tl7n33O3R8s7uTcs9dee+291l5nHyiVSqVSqfQ/E8A08Brwcxs94OUH+oLdwGfAApCU0B/A08CIFPM48FgB/LfA43Sh8wvAXQOLVd6aKoD/VQH8T3LidxlYNLAYSXpMjZtzC5UkSZLHgQNyx4o6YPJYL+G1RNB+n4HfO8CEHL/SB/yXgcvAfHXTw+Ip4F8DCzOV7ZIkSR4uOJYkSZJ3DfglMCsj4JWA/OsG/GbfuZdNlLiXA/KnDPi5uudeMiFVUn3BO8Jvv8b/bvC6JYYDcncZsKeBbw3YuRpV8w4wVQBfrjn/TP3PdgO2UvMSNQJ2BLAHWG3Az9a51mUGbKXm3W0E7ABuGLDHGlxvzIAt9RJ1GwEPGXB/trjepAFb6gXqNgIOA+8ZcNc8r3vJgH2pbNfpJg+oxvRnXu7Sz8X9LxuwT6TtLjd9wAZK/mNMV+8xA/ZV4F0D7npKHHOTpOJ1zwfmH5P3OWHALTRZnLKc7OAMmAZONMhsvzXgfgGmco7tbHnbgFswSBt7PO/Y0lGaJH2XGnBLOQtgMgPGgccFcNZwHtRO74wB975xnpD+1gPANeBPj2sOA794sPcbcI950D1OyEZJmT4HPpKF6jYwD7wP7MtxrS3Az8A6j7JcTq/RDPgM+EXOXwd2AQejj+7uqnkTeBHYnPHctZL8zJWQAY8Cr8toeNBoBH4H3pR+QRnjdH/RIANWDIyA1YbzYEn+3JhCqz2V5HyNVuOtR+e1J5dOL7Ig1mKd3i3Z37tJmZCfCMTvyggYlcTmlQD8hRyjIopsCTQb2kXHNwnULcqDSzJq7snYnpcbVVfJbBhcEQFLWc6PWfKbU3IxeEDunUbqYQkUAhNyJ76QSRCUv0S2zk6kO+JqfcqT8wN9SL8E7gQOAZ/Kjv+a/L0oW/M3ZXTclkmwXQ5wGvdwu+RXXNdjDvJIEfOQpLLbfTDrIuZB14MZJF0e0yG4HMwguR7MILkczKC5HMyguR7MoLkezKC5Hsygmfdom/a7rA9mEPn9Hoyuu9PnwYjyezKIvtDtwWgE9Hwwxn6mF4PRCLjjwah+0OPB1KqrFqrTg6mJa3swug/U68GEztRSqVQqlUqlUhfyP2d5kr16BQOWAAAAAElFTkSuQmCC" />
+  <text x="130" y="185" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold" fill="#333333">Document Analysis</text>
+  
+  <rect x="50" y="200" width="160" height="1" fill="#E5E7EB" />
+  <text x="60" y="220" font-family="Arial" font-size="12" font-weight="bold" fill="#333333">API Configuration</text>
+  <rect x="60" y="230" width="140" height="20" rx="3" ry="3" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" />
+  <text x="70" y="244" font-family="Arial" font-size="10" fill="#6B7280">http://localhost:8000</text>
+  
+  <rect x="60" y="260" width="140" height="20" rx="3" ry="3" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" />
+  <text x="70" y="274" font-family="Arial" font-size="10" fill="#6B7280">••••••••••••••••</text>
+  
+  <rect x="60" y="290" width="90" height="24" rx="4" ry="4" fill="#1E88E5" />
+  <text x="105" y="306" font-family="Arial" font-size="10" font-weight="bold" text-anchor="middle" fill="#FFFFFF">Check API Status</text>
+  
+  <rect x="60" y="330" width="140" height="40" rx="4" ry="4" fill="#E8F5E9" stroke="#4CAF50" stroke-width="1" />
+  <text x="130" y="345" font-family="Arial" font-size="10" text-anchor="middle" fill="#2E7D32">API is running ✅</text>
+  <text x="130" y="360" font-family="Arial" font-size="8" text-anchor="middle" fill="#2E7D32">{"status":"running","version":"1.0"}</text>
+  
+  <rect x="50" y="390" width="160" height="1" fill="#E5E7EB" />
+  <text x="60" y="410" font-family="Arial" font-size="12" font-weight="bold" fill="#333333">About</text>
+  <text x="60" y="430" font-family="Arial" font-size="10" fill="#6B7280">This dashboard connects to</text>
+  <text x="60" y="445" font-family="Arial" font-size="10" fill="#6B7280">the Document Analysis API</text>
+  <text x="60" y="460" font-family="Arial" font-size="10" fill="#6B7280">for processing documents.</text>
+  
+  <!-- Main Content -->
+  <rect x="230" y="71" width="700" height="499" fill="#FFFFFF" />
+  
+  <!-- Header -->
+  <text x="260" y="110" font-family="Arial" font-size="24" font-weight="bold" fill="#1E88E5">Document Analysis Dashboard</text>
+  <text x="260" y="135" font-family="Arial" font-size="14" fill="#6B7280">Upload your documents for AI-powered analysis and insights</text>
+  
+  <!-- Tabs -->
+  <rect x="260" y="150" width="200" height="40" rx="4" ry="4" fill="#1E88E5" />
+  <text x="360" y="175" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#FFFFFF">📄 Document Upload</text>
+  
+  <rect x="461" y="150" width="200" height="40" rx="4" ry="4" fill="#F3F4F6" />
+  <text x="561" y="175" font-family="Arial" font-size="14" font-weight="bold" text-anchor="middle" fill="#6B7280">🔍 Analysis Results</text>
+  
+  <!-- Upload Section -->
+  <rect x="260" y="210" width="400" height="340" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="4" ry="4" />
+  <text x="280" y="240" font-family="Arial" font-size="16" font-weight="bold" fill="#333333">Upload Document</text>
+  
+  <rect x="280" y="250" width="360" height="60" rx="4" ry="4" fill="#E3F2FD" />
+  <text x="300" y="285" font-family="Arial" font-size="12" fill="#1E88E5">Upload a PDF document to analyze. The system will extract key information and classify the document based on its content.</text>
+  
+  <rect x="280" y="330" width="360" height="50" rx="4" ry="4" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="1" />
+  <text x="460" y="360" font-family="Arial" font-size="12" text-anchor="middle" fill="#6B7280">Choose a PDF file</text>
+  
+  <text x="280" y="400" font-family="Arial" font-size="16" font-weight="bold" fill="#333333">Analysis Options</text>
+  
+  <rect x="280" y="415" width="16" height="16" fill="#FFFFFF" stroke="#1E88E5" stroke-width="2" />
+  <rect x="282" y="417" width="12" height="12" fill="#1E88E5" />
+  <text x="305" y="428" font-family="Arial" font-size="12" fill="#333333">Analyze immediately after upload</text>
+  
+  <rect x="280" y="440" width="16" height="16" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1" />
+  <text x="305" y="453" font-family="Arial" font-size="12" fill="#333333">Extract and display raw text</text>
+  
+  <rect x="500" y="415" width="16" height="16" fill="#FFFFFF" stroke="#1E88E5" stroke-width="2" />
+  <rect x="502" y="417" width="12" height="12" fill="#1E88E5" />
+  <text x="525" y="428" font-family="Arial" font-size="12" fill="#333333">Use OCR if needed</text>
+  
+  <rect x="500" y="440" width="16" height="16" fill="#FFFFFF" stroke="#1E88E5" stroke-width="2" />
+  <rect x="502" y="442" width="12" height="12" fill="#1E88E5" />
+  <text x="525" y="453" font-family="Arial" font-size="12" fill="#333333">Show confidence scores</text>
+  
+  <!-- Document Types Section -->
+  <rect x="680" y="210" width="230" height="180" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="4" ry="4" />
+  <text x="700" y="240" font-family="Arial" font-size="16" font-weight="bold" fill="#333333">Document Types</text>
+  <text x="700" y="265" font-family="Arial" font-size="12" fill="#333333">• Proof of Identity</text>
+  <text x="700" y="285" font-family="Arial" font-size="12" fill="#333333">• Proof of Address</text>
+  <text x="700" y="305" font-family="Arial" font-size="12" fill="#333333">• Business Registration</text>
+  <text x="700" y="325" font-family="Arial" font-size="12" fill="#333333">• Ownership documents</text>
+  <text x="700" y="345" font-family="Arial" font-size="12" fill="#333333">• Tax Return documents</text>
+  <text x="700" y="365" font-family="Arial" font-size="12" fill="#333333">• Financial documents</text>
+  
+  <!-- Status Section -->
+  <rect x="680" y="410" width="230" height="140" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="4" ry="4" />
+  <text x="700" y="440" font-family="Arial" font-size="16" font-weight="bold" fill="#333333">Processing Status</text>
+  
+  <rect x="700" y="450" width="190" height="60" rx="4" ry="4" fill="#FFF8E1" stroke="#FFC107" stroke-width="1" />
+  <rect x="700" y="450" width="5" height="60" fill="#FFC107" />
+  <text x="715" y="485" font-family="Arial" font-size="12" fill="#B45309">No document uploaded yet</text>
+  
+  <!-- Footer -->
+  <line x1="260" y1="570" x2="860" y2="570" stroke="#E5E7EB" stroke-width="1" />
+  <text x="560" y="585" font-family="Arial" font-size="10" text-anchor="middle" fill="#9CA3AF">Document Analysis powered by Claude AI • Built with Streamlit</text>
+</svg>
