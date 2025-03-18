@@ -15,20 +15,6 @@ from dotenv import load_dotenv
 # Import our custom compatibility client instead of Anthropic directly
 from compatible_client import ClaudeClient
 
-# Import the code from the provided API script
-try:
-    from prompts import (
-        user_prompt_classification, system_prompt_for_doc_classification,
-        user_prompt_poi, user_prompt_poa, user_prompt_registration,
-        user_prompt_ownership, user_prompt_tax_return, user_prompt_financial,
-        system_prompt_for_indentity_doc, system_prompt_for_poa_doc,
-        system_prompt_for_registration_doc, system_prompt_for_ownership_doc,
-        system_prompt_for_tax_return_doc, system_prompt_for_financial_doc
-    )
-except ImportError:
-    st.error("Error: prompts.py module not found. Make sure it exists in the same directory.")
-    st.stop()
-
 # Load environment variables
 load_dotenv()
 
@@ -49,16 +35,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ComplyStream logo URL - Replace with actual logo path when deploying
-LOGO_URL = "https://storage.googleapis.com/turing_mongo/complystream_logo.png"
+# ComplyStream logo
+LOGO_URL = "https://www.complystream.com/wp-content/uploads/2023/05/COMPLY_STREAM.png"
+LOGO_DATA = "data:image/png;base64,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"
 
 # Custom CSS to match ComplyStream theme
 st.markdown("""
 <style>
     /* Global styles */
     body {
-        font-family: 'Inter', sans-serif;
-        background-color: #FAFAFA;
+        font-family: 'Poppins', sans-serif;
+        background-color: #FFFFFF;
+        color: #333333;
     }
     
     /* Main container styling */
@@ -72,8 +60,9 @@ st.markdown("""
     
     /* Header and text styling */
     h1, h2, h3, h4, h5, h6 {
-        font-family: 'Inter', sans-serif;
-        color: #14213D;
+        font-family: 'Poppins', sans-serif;
+        color: #0A1D3F;
+        font-weight: 600;
     }
     
     /* Document section styling */
@@ -87,7 +76,7 @@ st.markdown("""
     .documents-title {
         font-size: 1.5rem;
         font-weight: 600;
-        color: #14213D;
+        color: #0A1D3F;
     }
     
     /* Upload container styling */
@@ -104,7 +93,7 @@ st.markdown("""
         font-size: 24px;
         font-weight: 600;
         margin-bottom: 24px;
-        color: #14213D;
+        color: #0A1D3F;
     }
     
     /* Empty state styling */
@@ -114,7 +103,7 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         padding: 50px 0;
-        background-color: #FAFAFA;
+        background-color: #F7F8FA;
         border-radius: 8px;
         margin-top: 20px;
     }
@@ -132,13 +121,18 @@ st.markdown("""
     
     /* Button styling */
     .primary-button {
-        background-color: #14213D;
+        background-color: #0A1D3F;
         color: white;
         border-radius: 6px;
         padding: 8px 16px;
         font-weight: 500;
         border: none;
         cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .primary-button:hover {
+        background-color: #1A336B;
     }
     
     /* Fields styling */
@@ -150,15 +144,6 @@ st.markdown("""
         display: block;
     }
     
-    /* Dropdown styling */
-    .stSelectbox>div {
-        border-radius: 6px;
-    }
-    
-    .stSelectbox>div>div {
-        background-color: white;
-    }
-    
     /* File upload area */
     .upload-area {
         border: 2px dashed #D1D5DB;
@@ -167,6 +152,12 @@ st.markdown("""
         text-align: center;
         margin-bottom: 20px;
         background-color: #F9FAFB;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-area:hover {
+        border-color: #0A1D3F;
+        background-color: #F0F4F8;
     }
     
     .upload-icon {
@@ -206,7 +197,7 @@ st.markdown("""
         font-size: 16px;
         font-weight: 600;
         margin-bottom: 16px;
-        color: #14213D;
+        color: #0A1D3F;
         padding-bottom: 8px;
         border-bottom: 1px solid #E5E7EB;
     }
@@ -232,13 +223,18 @@ st.markdown("""
         border-radius: 6px;
         font-weight: 500;
         height: 38px;
+        transition: all 0.3s ease;
     }
     
     /* Primary button */
     .stButton.primary>button {
-        background-color: #14213D;
+        background-color: #0A1D3F;
         color: white;
         border: none;
+    }
+    
+    .stButton.primary>button:hover {
+        background-color: #1A336B;
     }
     
     /* Secondary button */
@@ -248,11 +244,42 @@ st.markdown("""
         border: 1px solid #D1D5DB;
     }
     
+    .stButton.secondary>button:hover {
+        background-color: #F7F8FA;
+    }
+    
     /* Upload modal button container */
     .modal-buttons {
         display: flex;
         justify-content: space-between;
         margin-top: 20px;
+    }
+    
+    /* Document type dropdown */
+    .stSelectbox label {
+        font-weight: 500;
+        color: #374151;
+    }
+    
+    /* Validation badges */
+    .badge-pass {
+        display: inline-block;
+        padding: 4px 10px;
+        background-color: #D1FAE5;
+        color: #065F46;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .badge-fail {
+        display: inline-block;
+        padding: 4px 10px;
+        background-color: #FEE2E2;
+        color: #991B1B;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -356,7 +383,7 @@ def process_document_data(file_data, filename):
 
 # Sidebar with ComplyStream logo and navigation
 with st.sidebar:
-    st.markdown(f'<div class="logo-container"><img src="{LOGO_URL}" width="180"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="logo-container"><img src="{LOGO_DATA}" width="180"></div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -402,15 +429,6 @@ if st.session_state.upload_mode:
         st.markdown('<div class="upload-container">', unsafe_allow_html=True)
         st.markdown('<h1 class="header">Upload document</h1>', unsafe_allow_html=True)
 
-        # Document Category dropdown
-        st.markdown('<label class="field-label">Document Category</label>', unsafe_allow_html=True)
-        doc_category = st.selectbox(
-            'Document Category',
-            ['Select from the list', 'Identity Document', 'Proof of Address', 'Business Registration', 
-             'Ownership Document', 'Tax Return', 'Financial Document'],
-            label_visibility="collapsed"
-        )
-
         # Document Type dropdown
         st.markdown('<label class="field-label">Document Type</label>', unsafe_allow_html=True)
         doc_type = st.selectbox(
@@ -447,7 +465,7 @@ if st.session_state.upload_mode:
                 <div class="upload-area">
                     <div class="upload-icon">📄</div>
                     <div class="upload-text">Click to browse or drag and drop here</div>
-                    <div class="file-type-text">Supported file types: .pdf</div>
+                    <div class="file-type-text">Supported file types: .pdf (max 20MB)</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -468,8 +486,8 @@ if st.session_state.upload_mode:
         if uploaded_file is not None and analyze_clicked:
             if not CLAUDE_API_KEY:
                 st.error("Claude API key is required for document analysis")
-            elif doc_category == 'Select from the list' or doc_type == 'Select from the list':
-                st.error("Please select both Document Category and Document Type")
+            elif doc_type == 'Select from the list':
+                st.error("Please select a Document Type")
             else:
                 with st.spinner("Analyzing document..."):
                     try:
@@ -483,7 +501,6 @@ if st.session_state.upload_mode:
                         st.session_state.analysis_result = result
                         st.session_state.document_name = uploaded_file.name
                         st.session_state.analysis_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        st.session_state.doc_category = doc_category
                         st.session_state.doc_type = doc_type
                         
                         # Exit upload mode and show results
@@ -494,10 +511,7 @@ if st.session_state.upload_mode:
                     except Exception as e:
                         st.error(f"Error during analysis: {str(e)}")
 else:
-    # Show empty state or results
-    if "analysis_result" in st.session:
-    else:
-    # Show empty state or results
+    # Show results or empty state
     if "analysis_result" in st.session_state and st.session_state.get("show_results", False):
         # Show results
         result = st.session_state.analysis_result
@@ -508,7 +522,6 @@ else:
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown(f"**Document Category:** {st.session_state.doc_category}")
             st.markdown(f"**Document Type:** {st.session_state.doc_type}")
         
         with col2:
@@ -563,24 +576,22 @@ else:
                 # Filter out the confidence score
                 check_items = {k: v for k, v in validation.items() if k != "confidence_score"}
                 
-                # Create a table-like display
-                col1, col2 = st.columns([1, 3])
-                with col1:
-                    st.markdown("**Check**")
-                with col2:
-                    st.markdown("**Status**")
-                
+                # Create a table-like display with styled badges
                 for key, value in check_items.items():
                     col1, col2 = st.columns([1, 3])
                     with col1:
-                        st.markdown(f"{key.replace('_', ' ').title()}")
+                        st.markdown(f"**{key.replace('_', ' ').title()}**")
                     with col2:
                         if value is True:
-                            st.markdown("✅ PASS")
+                            st.markdown('<span class="badge-pass">✓ PASS</span>', unsafe_allow_html=True)
                         elif value is False:
-                            st.markdown("❌ FAIL")
+                            st.markdown('<span class="badge-fail">✗ FAIL</span>', unsafe_allow_html=True)
                         else:
                             st.markdown(str(value))
+                
+                # Show confidence score if available
+                if "confidence_score" in validation:
+                    st.markdown(f"**Overall Confidence Score:** {validation['confidence_score']}%")
             else:
                 st.json(validation)
         else:
@@ -606,7 +617,7 @@ else:
         <div class="empty-state">
             <div class="empty-state-icon">📄</div>
             <div class="empty-state-text">No documents</div>
-            <div class="empty-state-text">Start by uploading or drag and drop here</div>
+            <div class="empty-state-text">Start by uploading a PDF document (max 20MB)</div>
             <div style="margin-top: 20px;">
                 <button class="primary-button" onclick="document.querySelector('[data-testid=baseButton-headerUploadButton]').click()">Upload</button>
             </div>
