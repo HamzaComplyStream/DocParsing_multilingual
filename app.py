@@ -13,9 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-API_URL = os.getenv("API_URL", "http://localhost:8000")
-CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "")
-
+API_URL = st.secrets["api"]["url"]
+CLAUDE_API_KEY = st.secrets["api"]["claude_api_key"]
 # Page configuration
 st.set_page_config(
     page_title="Document Analysis Dashboard",
