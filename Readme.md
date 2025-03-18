@@ -22,8 +22,8 @@ A sleek, user-friendly Streamlit dashboard for analyzing documents using the Doc
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/document-analysis-dashboard.git
-cd document-analysis-dashboard
+https://github.com/HamzaComplyStream/DocParsing_multilingual.git
+cd DocParsing_multilingual
 ```
 
 2. Create and configure your environment variables:
