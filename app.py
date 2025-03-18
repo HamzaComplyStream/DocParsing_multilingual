@@ -10,7 +10,6 @@ import tempfile
 import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
-import asyncio
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
@@ -42,46 +41,120 @@ CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', st.secrets.get("CLAUDE_API_KEY", ""
 
 # Page configuration
 st.set_page_config(
-    page_title="Document Analysis",
+    page_title="ComplyStream Documents",
     page_icon="📄",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Custom CSS to match the provided UI
+# ComplyStream logo URL - Replace with actual logo path when deploying
+LOGO_URL = "https://storage.googleapis.com/turing_mongo/complystream_logo.png"
+
+# Custom CSS to match ComplyStream theme
 st.markdown("""
 <style>
-    /* Modal-like appearance */
+    /* Global styles */
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #FAFAFA;
+    }
+    
+    /* Main container styling */
+    .main {
+        background-color: white;
+    }
+    
+    .block-container {
+        padding-top: 1rem;
+    }
+    
+    /* Header and text styling */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', sans-serif;
+        color: #14213D;
+    }
+    
+    /* Document section styling */
+    .documents-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .documents-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #14213D;
+    }
+    
+    /* Upload container styling */
     .upload-container {
         background-color: white;
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 30px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         max-width: 550px;
         margin: 0 auto;
     }
     
-    /* Main header */
     .header {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 600;
-        margin-bottom: 30px;
-        color: #1F2937;
+        margin-bottom: 24px;
+        color: #14213D;
     }
     
-    /* Label styles */
-    .field-label {
+    /* Empty state styling */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 50px 0;
+        background-color: #FAFAFA;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+    
+    .empty-state-icon {
+        margin-bottom: 20px;
+        color: #6B7280;
+    }
+    
+    .empty-state-text {
+        color: #6B7280;
         font-size: 16px;
+        text-align: center;
+    }
+    
+    /* Button styling */
+    .primary-button {
+        background-color: #14213D;
+        color: white;
+        border-radius: 6px;
+        padding: 8px 16px;
         font-weight: 500;
-        margin-bottom: 10px;
-        color: #1F2937;
+        border: none;
+        cursor: pointer;
+    }
+    
+    /* Fields styling */
+    .field-label {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: #374151;
         display: block;
     }
     
     /* Dropdown styling */
+    .stSelectbox>div {
+        border-radius: 6px;
+    }
+    
     .stSelectbox>div>div {
-        border-radius: 8px !important;
-        border: 1px solid #D1D5DB !important;
+        background-color: white;
     }
     
     /* File upload area */
@@ -102,81 +175,87 @@ st.markdown("""
     
     .upload-text {
         color: #6B7280;
-        font-size: 16px;
+        font-size: 14px;
     }
     
     .file-type-text {
         color: #9CA3AF;
-        font-size: 14px;
+        font-size: 12px;
         margin-top: 8px;
-    }
-    
-    /* Button styling */
-    .stButton>button {
-        border-radius: 8px;
-        font-weight: 500;
-        padding: 8px 16px;
-        font-size: 16px;
-    }
-    
-    .cancel-button {
-        background-color: white;
-        color: #1F2937;
-        border: 1px solid #D1D5DB;
-    }
-    
-    .upload-button {
-        background-color: #14213D;
-        color: white;
-    }
-    
-    /* Analysis results section */
-    .results-container {
-        background-color: white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
-    }
-    
-    .section-header {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #1F2937;
     }
     
     /* File size warning */
     .file-warning {
-        color: #B91C1C;
+        color: #DC2626;
         font-size: 14px;
         margin-top: 5px;
     }
     
-    /* Hide Streamlit branding */
+    /* Results styling */
+    .results-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 24px;
+        margin-top: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .section-header {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #14213D;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    /* Remove Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Fix container width */
-    .block-container {
-        max-width: 1200px;
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+    /* Custom sidebar styling */
+    .sidebar .sidebar-content {
+        background-color: white;
     }
     
-    /* Two-column layout for buttons */
-    .button-container {
+    /* Logo in sidebar */
+    .logo-container {
+        padding: 20px 0;
+        display: flex;
+        justify-content: center;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        border-radius: 6px;
+        font-weight: 500;
+        height: 38px;
+    }
+    
+    /* Primary button */
+    .stButton.primary>button {
+        background-color: #14213D;
+        color: white;
+        border: none;
+    }
+    
+    /* Secondary button */
+    .stButton.secondary>button {
+        background-color: white;
+        color: #374151;
+        border: 1px solid #D1D5DB;
+    }
+    
+    /* Upload modal button container */
+    .modal-buttons {
         display: flex;
         justify-content: space-between;
         margin-top: 20px;
     }
-    
-    .button-container .stButton {
-        width: 48%;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# Document processor class (simplified to use synchronous Anthropic client)
+# Document processor class
 class DocumentProcessor:
     def __init__(self, api_key):
         self.today = datetime.today().strftime('%Y-%m-%d')
@@ -387,185 +466,258 @@ def process_document_data(file_data, filename):
         st.error(f"Error processing document: {str(e)}")
         raise
 
-# Display document upload UI in a modal-like container
-st.markdown('<div class="upload-container">', unsafe_allow_html=True)
-st.markdown('<h1 class="header">Upload document</h1>', unsafe_allow_html=True)
-
-# Document Category dropdown
-st.markdown('<label class="field-label">Document Category</label>', unsafe_allow_html=True)
-doc_category = st.selectbox(
-    'Document Category',
-    ['Select from the list', 'Identity Document', 'Proof of Address', 'Business Registration', 
-     'Ownership Document', 'Tax Return', 'Financial Document'],
-    label_visibility="collapsed"
-)
-
-# Document Type dropdown
-st.markdown('<label class="field-label">Document Type</label>', unsafe_allow_html=True)
-doc_type = st.selectbox(
-    'Document Type',
-    ['Select from the list', 'Passport', 'Driver License', 'Utility Bill', 'Bank Statement',
-     'Registration Certificate', 'Ownership Certificate', 'Tax Return', 'Financial Statement'],
-    label_visibility="collapsed"
-)
-
-# Document upload
-st.markdown('<label class="field-label">Document</label>', unsafe_allow_html=True)
-
-# Create a file uploader that matches the design
-uploaded_file = st.file_uploader(
-    "Upload PDF", 
-    type=["pdf"],
-    label_visibility="collapsed"
-)
-
-if uploaded_file is not None:
-    # Check file size
-    file_size = len(uploaded_file.getvalue())
-    if file_size > MAX_FILE_SIZE:
-        st.markdown(f'<div class="file-warning">File exceeds the 20MB size limit. Current size: {file_size/1024/1024:.2f}MB</div>', unsafe_allow_html=True)
-        uploaded_file = None
-
-# Custom buttons in a two-column layout
-st.markdown('<div class="button-container">', unsafe_allow_html=True)
-col1, col2 = st.columns(2)
-
-with col1:
-    cancel_button = st.button("Cancel", type="secondary", use_container_width=True)
-
-with col2:
-    analyze_button = st.button("Upload", type="primary", use_container_width=True)
+# Sidebar with ComplyStream logo and navigation
+with st.sidebar:
+    st.markdown(f'<div class="logo-container"><img src="{LOGO_URL}" width="180"></div>', unsafe_allow_html=True)
     
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)  # Close upload container
-
-# Process document when analyze is clicked
-if uploaded_file is not None and analyze_button:
+    st.markdown("---")
+    
+    # Navigation menu
+    st.markdown("### Navigation")
+    st.markdown("- Overview")
+    st.markdown("- Entity")
+    st.markdown("- Ownership")
+    st.markdown("- Directors")
+    st.markdown("- Financial Activity")
+    st.markdown("- Review")
+    st.markdown("- **Documents**")
+    st.markdown("- Activity")
+    st.markdown("- Comments")
+    
+    st.markdown("---")
+    
     if not CLAUDE_API_KEY:
-        st.error("Claude API key is required for document analysis")
-    elif doc_category == 'Select from the list' or doc_type == 'Select from the list':
-        st.error("Please select both Document Category and Document Type")
-    else:
-        with st.spinner("Analyzing document..."):
-            try:
-                # Read the file data
-                file_data = uploaded_file.getvalue()
-                
-                # Process the document
-                result = process_document_data(file_data, uploaded_file.name)
-                
-                # Store result in session state
-                st.session_state.analysis_result = result
-                st.session_state.document_name = uploaded_file.name
-                st.session_state.analysis_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                st.session_state.doc_category = doc_category
-                st.session_state.doc_type = doc_type
-                
-                # Display success message
-                st.success("Document uploaded and analyzed successfully!")
-                
-            except Exception as e:
-                st.error(f"Error during analysis: {str(e)}")
+        st.warning("Claude API key is not set. Please configure it to enable document analysis.")
 
-# Results Section (displayed after analysis)
-if "analysis_result" in st.session_state:
-    result = st.session_state.analysis_result
-    
-    st.markdown('<div class="results-container">', unsafe_allow_html=True)
-    st.markdown(f'<h2 class="section-header">Document Analysis Results: {st.session_state.document_name}</h2>', unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(f"**Document Category:** {st.session_state.doc_category}")
-        st.markdown(f"**Document Type:** {st.session_state.doc_type}")
-    
-    with col2:
-        st.markdown(f"**Processed On:** {st.session_state.analysis_time}")
-        processing_time = result.get("metadata", {}).get("processing_time_seconds", 0)
-        st.markdown(f"**Processing Time:** {processing_time:.2f} seconds")
-    
-    # Summary section
-    st.markdown('<h3 class="section-header">Summary</h3>', unsafe_allow_html=True)
-    
-    if "analysis" in result and "summary" in result["analysis"]:
-        summary_data = result["analysis"]["summary"]
-        if isinstance(summary_data, dict) and "value" in summary_data:
-            st.markdown(f"{summary_data['value']}")
-        else:
-            st.markdown(f"{summary_data}")
-    else:
-        st.info("No summary information available")
-    
-    # Document details
-    st.markdown('<h3 class="section-header">Document Details</h3>', unsafe_allow_html=True)
-    
-    if "analysis" in result and "document_details" in result["analysis"]:
-        doc_details = result["analysis"]["document_details"]
-        if isinstance(doc_details, dict) and "value" in doc_details:
-            if isinstance(doc_details["value"], dict):
-                # Create two columns for better layout
-                col1, col2 = st.columns(2)
-                keys = list(doc_details["value"].keys())
-                half = len(keys) // 2
+# Main page content
+# Document header with upload button
+st.markdown('<div class="documents-header">', unsafe_allow_html=True)
+st.markdown('<div class="documents-title">Documents</div>', unsafe_allow_html=True)
+
+# Create a placeholder for the "Upload files" button in the header
+upload_button_placeholder = st.empty()
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Check if we're in upload mode
+if 'upload_mode' not in st.session_state:
+    st.session_state.upload_mode = False
+
+# Toggle upload mode when the button is clicked
+if upload_button_placeholder.button("Upload files", key="header_upload_button"):
+    st.session_state.upload_mode = True
+
+# Show upload modal when in upload mode
+if st.session_state.upload_mode:
+    # Upload modal
+    with st.container():
+        st.markdown('<div class="upload-container">', unsafe_allow_html=True)
+        st.markdown('<h1 class="header">Upload document</h1>', unsafe_allow_html=True)
+
+        # Document Category dropdown
+        st.markdown('<label class="field-label">Document Category</label>', unsafe_allow_html=True)
+        doc_category = st.selectbox(
+            'Document Category',
+            ['Select from the list', 'Identity Document', 'Proof of Address', 'Business Registration', 
+             'Ownership Document', 'Tax Return', 'Financial Document'],
+            label_visibility="collapsed"
+        )
+
+        # Document Type dropdown
+        st.markdown('<label class="field-label">Document Type</label>', unsafe_allow_html=True)
+        doc_type = st.selectbox(
+            'Document Type',
+            ['Select from the list', 'Passport', 'Driver License', 'Utility Bill', 'Bank Statement',
+             'Registration Certificate', 'Ownership Certificate', 'Tax Return', 'Financial Statement'],
+            label_visibility="collapsed"
+        )
+
+        # Document upload
+        st.markdown('<label class="field-label">Document</label>', unsafe_allow_html=True)
+
+        # Create a container for the upload area
+        upload_container = st.container()
+        
+        with upload_container:
+            # File uploader
+            uploaded_file = st.file_uploader(
+                "Upload PDF", 
+                type=["pdf"],
+                label_visibility="collapsed"
+            )
+
+            # Check file size
+            if uploaded_file is not None:
+                file_size = len(uploaded_file.getvalue())
+                if file_size > MAX_FILE_SIZE:
+                    st.markdown(f'<div class="file-warning">File exceeds the 20MB size limit. Current size: {file_size/1024/1024:.2f}MB</div>', unsafe_allow_html=True)
+                    uploaded_file = None
+                    
+            # If no file is uploaded, show the dashed upload area
+            if uploaded_file is None:
+                st.markdown("""
+                <div class="upload-area">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Click to browse or drag and drop here</div>
+                    <div class="file-type-text">Supported file types: .pdf</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Buttons row
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Cancel", type="secondary", key="cancel_upload", use_container_width=True):
+                st.session_state.upload_mode = False
+                st.rerun()
                 
-                with col1:
-                    for key in keys[:half]:
-                        st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
-                
-                with col2:
-                    for key in keys[half:]:
-                        st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
+        with col2:
+            analyze_clicked = st.button("Upload", type="primary", key="upload_document", use_container_width=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Process document when analyze is clicked
+        if uploaded_file is not None and analyze_clicked:
+            if not CLAUDE_API_KEY:
+                st.error("Claude API key is required for document analysis")
+            elif doc_category == 'Select from the list' or doc_type == 'Select from the list':
+                st.error("Please select both Document Category and Document Type")
             else:
-                st.markdown(doc_details["value"])
+                with st.spinner("Analyzing document..."):
+                    try:
+                        # Read the file data
+                        file_data = uploaded_file.getvalue()
+                        
+                        # Process the document
+                        result = process_document_data(file_data, uploaded_file.name)
+                        
+                        # Store result in session state
+                        st.session_state.analysis_result = result
+                        st.session_state.document_name = uploaded_file.name
+                        st.session_state.analysis_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        st.session_state.doc_category = doc_category
+                        st.session_state.doc_type = doc_type
+                        
+                        # Exit upload mode and show results
+                        st.session_state.upload_mode = False
+                        st.session_state.show_results = True
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Error during analysis: {str(e)}")
+else:
+    # Show empty state or results
+    if "analysis_result" in st.session_state and st.session_state.get("show_results", False):
+        # Show results
+        result = st.session_state.analysis_result
+        
+        st.markdown('<div class="results-container">', unsafe_allow_html=True)
+        st.markdown(f'<h2 class="section-header">Document Analysis Results: {st.session_state.document_name}</h2>', unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(f"**Document Category:** {st.session_state.doc_category}")
+            st.markdown(f"**Document Type:** {st.session_state.doc_type}")
+        
+        with col2:
+            st.markdown(f"**Processed On:** {st.session_state.analysis_time}")
+            processing_time = result.get("metadata", {}).get("processing_time_seconds", 0)
+            st.markdown(f"**Processing Time:** {processing_time:.2f} seconds")
+        
+        # Summary section
+        st.markdown('<h3 class="section-header">Summary</h3>', unsafe_allow_html=True)
+        
+        if "analysis" in result and "summary" in result["analysis"]:
+            summary_data = result["analysis"]["summary"]
+            if isinstance(summary_data, dict) and "value" in summary_data:
+                st.markdown(f"{summary_data['value']}")
+            else:
+                st.markdown(f"{summary_data}")
         else:
-            st.json(doc_details)
-    else:
-        st.info("No detailed document information available")
-    
-    # Validation Checks
-    st.markdown('<h3 class="section-header">Validation Checks</h3>', unsafe_allow_html=True)
-    
-    if "analysis" in result and "validation" in result["analysis"]:
-        validation = result["analysis"]["validation"]
-        if isinstance(validation, dict):
-            # Filter out the confidence score
-            check_items = {k: v for k, v in validation.items() if k != "confidence_score"}
-            
-            # Create a table-like display
-            col1, col2 = st.columns([1, 3])
-            with col1:
-                st.markdown("**Check**")
-            with col2:
-                st.markdown("**Status**")
-            
-            for key, value in check_items.items():
+            st.info("No summary information available")
+        
+        # Document details
+        st.markdown('<h3 class="section-header">Document Details</h3>', unsafe_allow_html=True)
+        
+        if "analysis" in result and "document_details" in result["analysis"]:
+            doc_details = result["analysis"]["document_details"]
+            if isinstance(doc_details, dict) and "value" in doc_details:
+                if isinstance(doc_details["value"], dict):
+                    # Create two columns for better layout
+                    col1, col2 = st.columns(2)
+                    keys = list(doc_details["value"].keys())
+                    half = len(keys) // 2
+                    
+                    with col1:
+                        for key in keys[:half]:
+                            st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
+                    
+                    with col2:
+                        for key in keys[half:]:
+                            st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
+                else:
+                    st.markdown(doc_details["value"])
+            else:
+                st.json(doc_details)
+        else:
+            st.info("No detailed document information available")
+        
+        # Validation Checks
+        st.markdown('<h3 class="section-header">Validation Checks</h3>', unsafe_allow_html=True)
+        
+        if "analysis" in result and "validation" in result["analysis"]:
+            validation = result["analysis"]["validation"]
+            if isinstance(validation, dict):
+                # Filter out the confidence score
+                check_items = {k: v for k, v in validation.items() if k != "confidence_score"}
+                
+                # Create a table-like display
                 col1, col2 = st.columns([1, 3])
                 with col1:
-                    st.markdown(f"{key.replace('_', ' ').title()}")
+                    st.markdown("**Check**")
                 with col2:
-                    if value is True:
-                        st.markdown("✅ PASS")
-                    elif value is False:
-                        st.markdown("❌ FAIL")
-                    else:
-                        st.markdown(str(value))
+                    st.markdown("**Status**")
+                
+                for key, value in check_items.items():
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        st.markdown(f"{key.replace('_', ' ').title()}")
+                    with col2:
+                        if value is True:
+                            st.markdown("✅ PASS")
+                        elif value is False:
+                            st.markdown("❌ FAIL")
+                        else:
+                            st.markdown(str(value))
+            else:
+                st.json(validation)
         else:
-            st.json(validation)
+            st.info("No validation information available")
+        
+        # Export options
+        col_exp1, col_exp2 = st.columns(2)
+        with col_exp1:
+            if st.button("Export Results as JSON", use_container_width=True):
+                json_str = json.dumps(result, indent=2)
+                b64 = base64.b64encode(json_str.encode()).decode()
+                href = f'<a href="data:file/json;base64,{b64}" download="analysis_result.json">Download JSON File</a>'
+                st.markdown(href, unsafe_allow_html=True)
+        
+        with col_exp2:
+            if st.button("Download Document Report", use_container_width=True):
+                st.info("Document report generation functionality would be implemented here.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)  # Close result container
     else:
-        st.info("No validation information available")
-    
-    # Export options
-    col_exp1, col_exp2 = st.columns(2)
-    with col_exp1:
-        if st.button("Export Results as JSON", use_container_width=True):
-            json_str = json.dumps(result, indent=2)
-            b64 = base64.b64encode(json_str.encode()).decode()
-            href = f'<a href="data:file/json;base64,{b64}" download="analysis_result.json">Download JSON File</a>'
-            st.markdown(href, unsafe_allow_html=True)
-    
-    with col_exp2:
-        if st.button("Download Document Report", use_container_width=True):
-            st.info("Document report generation functionality would be implemented here.")
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close result container
+        # Show empty state
+        st.markdown("""
+        <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <div class="empty-state-text">No documents</div>
+            <div class="empty-state-text">Start by uploading or drag and drop here</div>
+            <div style="margin-top: 20px;">
+                <button class="primary-button" onclick="document.querySelector('[data-testid=baseButton-headerUploadButton]').click()">Upload</button>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
