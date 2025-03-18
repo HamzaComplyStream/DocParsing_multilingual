@@ -88,7 +88,7 @@ The dashboard connects to the Document Analysis API which should be running sepa
 
 ## Screenshots
 
-![Dashboard Screenshot](dashboard_screenshot.png)
+![Dashboard Screenshot](streamlit-demo-screenshot.svg)
 
 ## Requirements
 
