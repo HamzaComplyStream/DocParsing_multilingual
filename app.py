@@ -189,17 +189,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Document processor class from the provided API
+from anthropic import Anthropic
+
 class DocumentProcessor:
     def __init__(self, api_key):
         self.today = datetime.today().strftime('%Y-%m-%d')
-        self.async_client = AsyncAnthropic(api_key=api_key)
-    
+        self.client = Anthropic(api_key=api_key)
+        
+    # Then modify the methods to use the synchronous client
     async def classify_document(self, document_text: str):
-        """Classify the document type using Claude API"""
         try:
             user_prompt = user_prompt_classification(document_text)
             
-            response = await self.async_client.messages.create(
+            response = self.client.messages.create(
                 model=MODEL_ID,
                 max_tokens=1024,
                 system=system_prompt_for_doc_classification,
