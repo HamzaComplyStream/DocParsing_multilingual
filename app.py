@@ -146,6 +146,7 @@ class DocumentProcessor:
     def __init__(self, api_key):
         self.today = datetime.today().strftime('%Y-%m-%d')
         self.client = Anthropic(api_key=api_key)
+        # No proxies parameter used here
     
     def classify_document(self, document_text: str) -> Dict[str, Any]:
         """Classify the document type using Claude API"""
