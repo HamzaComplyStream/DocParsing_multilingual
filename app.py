@@ -34,7 +34,7 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB in bytes
 # Get environment variables
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
 if not CLAUDE_API_KEY:
-    logger.warning("CLAUDE_API_KEY environment variable not set. You'll need to provide it in the app.")
+    logger.warning("CLAUDE_API_KEY environment variable not set. Make sure it's set in your environment.")
 
 # Import the prompts module
 try:
@@ -390,14 +390,8 @@ def main():
     st.markdown('<div class="title">Document Analysis Demo</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Upload a document for AI-powered analysis</div>', unsafe_allow_html=True)
     
-    # Sidebar for API key
+    # Sidebar with information only
     with st.sidebar:
-        st.header("Configuration")
-        api_key = st.text_input("Claude API Key", value=CLAUDE_API_KEY or "", type="password")
-        st.caption("Your API key is required to use Claude's document analysis capabilities")
-        
-        st.divider()
-        
         st.subheader("About")
         st.markdown("""
         This demo showcases document analysis using Claude AI.
@@ -431,15 +425,15 @@ def main():
         if file_size > MAX_FILE_SIZE:
             st.markdown(f'<div class="error-message">File exceeds the 20MB size limit. Current size: {file_size/1024/1024:.2f}MB</div>', unsafe_allow_html=True)
         else:
-            # API key validation
-            if not api_key:
-                st.markdown('<div class="error-message">Claude API key is required to process documents. Please enter it in the sidebar.</div>', unsafe_allow_html=True)
-            else:
-                # Show file info
-                st.markdown(f"**File:** {uploaded_file.name} ({file_size/1024/1024:.2f}MB)")
-                
-                # Analyze button
-                if st.button("Analyze Document", type="primary"):
+            # Show file info
+            st.markdown(f"**File:** {uploaded_file.name} ({file_size/1024/1024:.2f}MB)")
+            
+            # Analyze button
+            if st.button("Analyze Document", type="primary"):
+                # Check for API key
+                if not CLAUDE_API_KEY:
+                    st.markdown('<div class="error-message">Claude API key is not set in the environment. Please set the CLAUDE_API_KEY environment variable.</div>', unsafe_allow_html=True)
+                else:
                     with st.spinner("Processing document..."):
                         try:
                             start_time = time.time()
@@ -452,7 +446,7 @@ def main():
                             document_text = extract_text_from_pdf(file_data)
                             
                             # Process the document
-                            processor = DocumentProcessor(api_key)
+                            processor = DocumentProcessor(CLAUDE_API_KEY)
                             result = processor.process_document_in_batches(document_text)
                             
                             # Add processing metadata
