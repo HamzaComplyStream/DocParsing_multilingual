@@ -1,6 +1,6 @@
 import os
-import io
 import json
+import base64
 import logging
 import time
 import streamlit as st
@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from anthropic import Anthropic
 import fitz  # PyMuPDF for PDF processing
 from datetime import datetime
-import pandas as pd
 import pytesseract
 from PIL import Image
+import io
 import tempfile
 from dotenv import load_dotenv
 
@@ -53,29 +53,25 @@ except ImportError:
 
 # Set up Streamlit page configuration
 st.set_page_config(
-    page_title="Document Analysis Tool",
+    page_title="Document Analysis Demo",
     page_icon="📄",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Initialize session state variables if they don't exist
-if 'results' not in st.session_state:
-    st.session_state.results = None
-if 'processing' not in st.session_state:
-    st.session_state.processing = False
-
 # Custom styling
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
+    .title {
+        font-size: 42px;
+        font-weight: bold;
+        color: #1E3A8A;
+        margin-bottom: 20px;
     }
-    .sub-header {
-        font-size: 1.5rem;
-        margin-top: 2rem;
-        margin-bottom: 1rem;
+    .subtitle {
+        font-size: 24px;
+        color: #4B5563;
+        margin-bottom: 40px;
     }
     .section-header {
         font-size: 24px;
@@ -86,18 +82,16 @@ st.markdown("""
         padding-bottom: 10px;
         border-bottom: 1px solid #E5E7EB;
     }
-    .info-box {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-    }
     .result-container {
-        background-color: #ffffff;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        border: 1px solid #e0e0e0;
-        margin-top: 1rem;
+        background-color: #F9FAFB;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+        border: 1px solid #E5E7EB;
+    }
+    .info-text {
+        font-size: 16px;
+        color: #4B5563;
     }
     .success-message {
         padding: 15px;
@@ -152,33 +146,32 @@ class DocumentProcessor:
     def __init__(self, api_key):
         self.today = datetime.today().strftime('%Y-%m-%d')
         self.client = Anthropic(api_key=api_key)
+        # No proxies parameter used here
     
     def classify_document(self, document_text: str) -> Dict[str, Any]:
         """Classify the document type using Claude API"""
         try:
-            with st.status("Classifying document type...", expanded=True) as status:
-                user_prompt = user_prompt_classification(document_text)
-                
-                response = self.client.messages.create(
-                    model=MODEL_ID,
-                    max_tokens=1024,
-                    system=system_prompt_for_doc_classification,
-                    messages=[
-                        {"role": "user", "content": user_prompt}
-                    ]
-                )
-                
-                # Extract JSON from response
-                result_text = response.content[0].text
-                # Clean up the result (sometimes Claude returns extra text)
-                if '{' in result_text and '}' in result_text:
-                    json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
-                    result = json.loads(json_str)
-                    status.update(label="Document classification complete!", state="complete", expanded=False)
-                    return result
-                else:
-                    status.update(label="Classification failed", state="error")
-                    return {"error": "Could not parse classification result", "raw_response": result_text}
+            st.text("Classifying document type...")
+            user_prompt = user_prompt_classification(document_text)
+            
+            response = self.client.messages.create(
+                model=MODEL_ID,
+                max_tokens=1024,
+                system=system_prompt_for_doc_classification,
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+            
+            # Extract JSON from response
+            result_text = response.content[0].text
+            # Clean up the result (sometimes Claude returns extra text)
+            if '{' in result_text and '}' in result_text:
+                json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
+                result = json.loads(json_str)
+                return result
+            else:
+                return {"error": "Could not parse classification result", "raw_response": result_text}
         except Exception as e:
             logger.error(f"Error classifying document: {str(e)}")
             st.error(f"Error classifying document: {str(e)}")
@@ -201,35 +194,33 @@ class DocumentProcessor:
             user_prompt_func, system_prompt = prompt_map.get(document_class, 
                                                             (user_prompt_financial, system_prompt_for_financial_doc))
             
-            with st.status(f"Analyzing document details (class {document_class})...", expanded=True) as status:
-                # Generate the user prompt
-                user_prompt = user_prompt_func(document_text, self.today)
-                
-                response = self.client.messages.create(
-                    model=MODEL_ID,
-                    max_tokens=4096,
-                    system=system_prompt,
-                    messages=[
-                        {"role": "user", "content": user_prompt}
-                    ]
-                )
-                
-                # Extract JSON from response
-                result_text = response.content[0].text
-                try:
-                    # Try to extract JSON if Claude added extra text
-                    if '{' in result_text and '}' in result_text:
-                        json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
-                        result = json.loads(json_str)
-                        status.update(label="Document analysis complete!", state="complete", expanded=False)
-                        return result
-                    else:
-                        status.update(label="Analysis parsing failed", state="error")
-                        return {"raw_response": result_text}
-                except json.JSONDecodeError:
-                    logger.warning("Could not parse response as JSON, returning raw text")
-                    status.update(label="JSON parsing failed", state="error")
+            # Generate the user prompt
+            user_prompt = user_prompt_func(document_text, self.today)
+            
+            st.text(f"Analyzing document details (class {document_class})...")
+            
+            response = self.client.messages.create(
+                model=MODEL_ID,
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+            
+            # Extract JSON from response
+            result_text = response.content[0].text
+            try:
+                # Try to extract JSON if Claude added extra text
+                if '{' in result_text and '}' in result_text:
+                    json_str = result_text[result_text.find('{'):result_text.rfind('}')+1]
+                    result = json.loads(json_str)
+                    return result
+                else:
                     return {"raw_response": result_text}
+            except json.JSONDecodeError:
+                logger.warning("Could not parse response as JSON, returning raw text")
+                return {"raw_response": result_text}
         except Exception as e:
             logger.error(f"Error processing document: {str(e)}")
             st.error(f"Error processing document: {str(e)}")
@@ -368,210 +359,61 @@ def display_document_type(doc_class):
     st.markdown(f'<span class="badge {badge_class}">{name}</span>', unsafe_allow_html=True)
     return name
 
-def display_results(result):
-    """
-    Display the analysis results in a structured format
-    
-    Args:
-        result: Analysis results dictionary
-    """
-    if not result:
+def format_validation_results(validation):
+    """Format validation results with colored badges"""
+    if not isinstance(validation, dict):
+        st.write(validation)
         return
     
-    st.markdown('<div class="sub-header">📄 Document Analysis Results</div>', unsafe_allow_html=True)
+    # Filter out the confidence score
+    check_items = {k: v for k, v in validation.items() if k != "confidence_score"}
     
-    # Document type from classification
-    classification = result.get("classification", {})
-    if "class" in classification:
-        doc_class = classification["class"]
-        doc_type = display_document_type(doc_class)
-        
-        if "confidence" in classification:
-            st.write(f"**Confidence:** {classification.get('confidence', 0):.2f}%")
-        
-        if "class_description" in classification:
-            st.write(f"**Description:** {classification['class_description']}")
-    
-    # Analysis data
-    analysis = result.get("analysis", {})
-    
-    # Create tabs for different sections
-    tab1, tab2 = st.tabs(["Summary", "Detailed Analysis"])
-    
-    with tab1:
-        # Summary section
-        if "summary" in analysis:
-            st.markdown("### Key Points")
-            summary_data = analysis["summary"]
-            if isinstance(summary_data, dict) and "value" in summary_data:
-                st.markdown(summary_data["value"])
+    # Create a table-like display with colored badges
+    for key, value in check_items.items():
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            st.write(f"**{key.replace('_', ' ').title()}**")
+        with col2:
+            if value is True:
+                st.markdown('<span class="badge badge-green">✓ PASS</span>', unsafe_allow_html=True)
+            elif value is False:
+                st.markdown('<span class="badge badge-red">✗ FAIL</span>', unsafe_allow_html=True)
             else:
-                st.markdown(str(summary_data))
-        
-        # Validation results if available
-        if "validation" in analysis:
-            st.markdown("### Document Validity")
-            validation = analysis["validation"]
-            
-            if isinstance(validation, dict):
-                # Show confidence score if available
-                if "confidence_score" in validation:
-                    st.markdown(f"**Confidence Score:** {validation['confidence_score']}%")
-                
-                # Filter out the confidence score for other checks
-                check_items = {k: v for k, v in validation.items() if k != "confidence_score"}
-                
-                # Display validation checks in a more compact format
-                for key, value in check_items.items():
-                    if value is True:
-                        st.markdown(f"✅ **{key.replace('_', ' ').title()}**: Pass")
-                    elif value is False:
-                        st.markdown(f"❌ **{key.replace('_', ' ').title()}**: Fail")
-                    else:
-                        st.markdown(f"ℹ️ **{key.replace('_', ' ').title()}**: {value}")
+                st.write(str(value))
     
-    with tab2:
-        # Document details
-        if "document_details" in analysis:
-            st.markdown("### Document Details")
-            doc_details = analysis["document_details"]
-            
-            if isinstance(doc_details, dict) and "value" in doc_details:
-                if isinstance(doc_details["value"], dict):
-                    # Convert to DataFrame for better display
-                    df = pd.DataFrame(list(doc_details["value"].items()), columns=["Field", "Value"])
-                    st.dataframe(df, use_container_width=True)
-                else:
-                    st.markdown(str(doc_details["value"]))
-            else:
-                st.json(doc_details)
-        
-        # Display other sections
-        for key, value in analysis.items():
-            if key not in ["summary", "validation", "document_details"]:
-                st.markdown(f"### {key.replace('_', ' ').title()}")
-                
-                if isinstance(value, dict):
-                    if "value" in value and isinstance(value["value"], dict):
-                        # Create two columns for better layout of key-value pairs
-                        col1, col2 = st.columns(2)
-                        keys = list(value["value"].keys())
-                        half = len(keys) // 2
-                        
-                        with col1:
-                            for k in keys[:half]:
-                                st.markdown(f"**{k.replace('_', ' ').title()}**: {value['value'][k]}")
-                        
-                        with col2:
-                            for k in keys[half:]:
-                                st.markdown(f"**{k.replace('_', ' ').title()}**: {value['value'][k]}")
-                    else:
-                        st.json(value)
-                elif isinstance(value, list):
-                    for item in value:
-                        if isinstance(item, dict):
-                            for k, v in item.items():
-                                st.markdown(f"**{k.replace('_', ' ').title()}**: {v}")
-                        else:
-                            st.text(item)
-                else:
-                    st.text(str(value))
-    
-    # Add metadata if available
-    if "metadata" in result:
-        with st.expander("Processing Metadata", expanded=False):
-            st.markdown(f"**Filename:** {result['metadata'].get('filename', 'Unknown')}")
-            st.markdown(f"**Processing Time:** {result['metadata'].get('processing_time_seconds', 0):.2f} seconds")
-            st.markdown(f"**Processed At:** {result['metadata'].get('processed_at', 'Unknown')}")
-            st.markdown(f"**Text Length:** {result['metadata'].get('text_length', 0)} characters")
-    
-    # Download results button
-    st.markdown('<div class="section-header">Export Results</div>', unsafe_allow_html=True)
-    
-    # Convert the result to JSON string
-    json_str = json.dumps(result, indent=2)
-    
-    # Create a download button for the JSON
-    st.download_button(
-        label="Download Analysis (JSON)",
-        data=json_str,
-        file_name=f"document_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-        mime="application/json",
-        key="download_json"
-    )
-
-def process_document(uploaded_file):
-    """Process the uploaded document and return analysis results"""
-    try:
-        st.session_state.processing = True
-        
-        start_time = time.time()
-        
-        # Read file content
-        file_data = uploaded_file.getvalue()
-        
-        # Extract text from the document
-        with st.status("Extracting text from document...", expanded=True) as status:
-            document_text = extract_text_from_pdf(file_data)
-            
-            # Show text preview
-            with st.expander("Preview extracted text", expanded=False):
-                st.text_area("Extracted Text", document_text[:10000] + ("..." if len(document_text) > 10000 else ""), height=200)
-            
-            status.update(label="Text extraction complete!", state="complete", expanded=False)
-        
-        # Process the document
-        processor = DocumentProcessor(CLAUDE_API_KEY)
-        result = processor.process_document_in_batches(document_text)
-        
-        # Add processing metadata
-        processing_time = time.time() - start_time
-        result["metadata"] = {
-            "filename": uploaded_file.name,
-            "processing_time_seconds": round(processing_time, 2),
-            "processed_at": datetime.now().isoformat(),
-            "text_length": len(document_text)
-        }
-        
-        st.session_state.processing = False
-        return result
-        
-    except Exception as e:
-        st.markdown(f'<div class="error-message">Error processing document: {str(e)}</div>', unsafe_allow_html=True)
-        logger.error(f"Error processing document: {str(e)}")
-        st.session_state.processing = False
-        return None
+    # Show confidence score if available
+    if "confidence_score" in validation:
+        st.write(f"**Overall Confidence Score:** {validation['confidence_score']}%")
 
 def main():
     # Page title
-    st.markdown('<div class="main-header">Document Analysis Tool</div>', unsafe_allow_html=True)
+    st.markdown('<div class="title">Document Analysis Demo</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Upload a document for AI-powered analysis</div>', unsafe_allow_html=True)
     
-    st.markdown("""
-    <div class="info-box">
-    Upload a PDF document to generate an automated summary and analysis. This tool identifies document type and extracts key information.
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Sidebar
+    # Sidebar with information only
     with st.sidebar:
-        st.header("About")
+        st.subheader("About")
         st.markdown("""
-        This tool analyzes various types of documents:
+        This demo showcases document analysis using Claude AI.
         
-        - Proof of Identity Documents
-        - Proof of Address Documents
-        - Registration Documents
+        **Supported Document Types:**
+        - Identity Documents
+        - Proof of Address
+        - Business Registration
         - Ownership Documents
         - Tax Returns
         - Financial Documents
         
-        The analysis includes document classification, key information extraction, and validity assessment.
-        
-        **Note:** The tool attempts to process scanned documents with OCR, but results may vary based on scan quality.
+        **Limitations:**
+        - PDF files only
+        - Max file size: 20MB
+        - Processing may take some time depending on document complexity
         """)
     
     # Main content area - File upload section
     st.markdown('<div class="section-header">Upload Document</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="info-text">Select a PDF document to analyze. The system will extract text, classify the document type, and provide a detailed analysis.</div>', unsafe_allow_html=True)
     
     # File upload
     uploaded_file = st.file_uploader("Upload a PDF document", type=["pdf"], key="document_uploader", help="Maximum file size is 20MB")
@@ -586,14 +428,115 @@ def main():
             # Show file info
             st.markdown(f"**File:** {uploaded_file.name} ({file_size/1024/1024:.2f}MB)")
             
-            # API key check
-            if not CLAUDE_API_KEY:
-                st.markdown('<div class="error-message">Claude API key is not set in environment. Please set the CLAUDE_API_KEY environment variable.</div>', unsafe_allow_html=True)
-            else:
-                # Analyze button
-                if st.button("Analyze Document", type="primary"):
+            # Analyze button
+            if st.button("Analyze Document", type="primary"):
+                # Check for API key
+                if not CLAUDE_API_KEY:
+                    st.markdown('<div class="error-message">Claude API key is not set in the environment. Please set the CLAUDE_API_KEY environment variable.</div>', unsafe_allow_html=True)
+                else:
                     with st.spinner("Processing document..."):
-                        st.session_state.results = process_document(uploaded_file)
+                        try:
+                            start_time = time.time()
+                            
+                            # Read file content
+                            file_data = uploaded_file.getvalue()
+                            
+                            # Extract text from the document
+                            st.text("Extracting text from document...")
+                            document_text = extract_text_from_pdf(file_data)
+                            
+                            # Process the document
+                            processor = DocumentProcessor(CLAUDE_API_KEY)
+                            result = processor.process_document_in_batches(document_text)
+                            
+                            # Add processing metadata
+                            processing_time = time.time() - start_time
+                            result["metadata"] = {
+                                "filename": uploaded_file.name,
+                                "processing_time_seconds": round(processing_time, 2),
+                                "processed_at": datetime.now().isoformat(),
+                                "text_length": len(document_text)
+                            }
+                            
+                            # Display results
+                            st.markdown(f'<div class="success-message">Document analyzed successfully in {result["metadata"]["processing_time_seconds"]:.2f} seconds</div>', unsafe_allow_html=True)
+                            
+                            # Classification result
+                            st.markdown('<div class="section-header">Document Classification</div>', unsafe_allow_html=True)
+                            
+                            classification = result.get("classification", {})
+                            if "class" in classification:
+                                doc_class = classification["class"]
+                                doc_type = display_document_type(doc_class)
+                                
+                                if "confidence" in classification:
+                                    st.write(f"**Confidence:** {classification['confidence']:.2f}%")
+                                
+                                if "class_description" in classification:
+                                    st.write(f"**Description:** {classification['class_description']}")
+                            else:
+                                st.write("Could not determine document class")
+                            
+                            # Document details
+                            st.markdown('<div class="section-header">Document Analysis</div>', unsafe_allow_html=True)
+                            
+                            analysis = result.get("analysis", {})
+                            
+                            # Check if analysis contains a summary
+                            if "summary" in analysis:
+                                st.markdown("### Summary")
+                                summary_data = analysis["summary"]
+                                if isinstance(summary_data, dict) and "value" in summary_data:
+                                    st.write(summary_data["value"])
+                                else:
+                                    st.write(summary_data)
+                            
+                            # Document details
+                            if "document_details" in analysis:
+                                st.markdown("### Document Details")
+                                doc_details = analysis["document_details"]
+                                if isinstance(doc_details, dict) and "value" in doc_details:
+                                    if isinstance(doc_details["value"], dict):
+                                        # Create two columns for better layout
+                                        col1, col2 = st.columns(2)
+                                        keys = list(doc_details["value"].keys())
+                                        half = len(keys) // 2
+                                        
+                                        with col1:
+                                            for key in keys[:half]:
+                                                st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
+                                        
+                                        with col2:
+                                            for key in keys[half:]:
+                                                st.markdown(f"**{key.replace('_', ' ').title()}**: {doc_details['value'][key]}")
+                                    else:
+                                        st.write(doc_details["value"])
+                                else:
+                                    st.json(doc_details)
+                            
+                            # Validation results
+                            if "validation" in analysis:
+                                st.markdown("### Validation Checks")
+                                format_validation_results(analysis["validation"])
+                            
+                            # Export options
+                            st.markdown('<div class="section-header">Export Results</div>', unsafe_allow_html=True)
+                            
+                            # Convert the result to JSON string
+                            json_str = json.dumps(result, indent=2)
+                            
+                            # Create a download button for the JSON
+                            st.download_button(
+                                label="Download JSON Results",
+                                data=json_str,
+                                file_name=f"{os.path.splitext(uploaded_file.name)[0]}_analysis.json",
+                                mime="application/json",
+                                key="download_json"
+                            )
+                            
+                        except Exception as e:
+                            st.markdown(f'<div class="error-message">Error processing document: {str(e)}</div>', unsafe_allow_html=True)
+                            logger.error(f"Error processing document: {str(e)}")
     else:
         # Show empty state
         st.markdown("""
@@ -603,16 +546,6 @@ def main():
             <div style="font-size: 14px; color: #6B7280;">or click to browse</div>
         </div>
         """, unsafe_allow_html=True)
-    
-    # Display results if available
-    if st.session_state.results:
-        st.markdown('<div class="result-container">', unsafe_allow_html=True)
-        display_results(st.session_state.results)
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Display processing message
-    if st.session_state.processing:
-        st.info("Document analysis in progress...")
 
 if __name__ == "__main__":
     main()
